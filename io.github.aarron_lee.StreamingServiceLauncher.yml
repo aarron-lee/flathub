@@ -1,0 +1,47 @@
+app-id: io.github.aarron_lee.StreamingServiceLauncher
+
+runtime: org.freedesktop.Platform
+runtime-version: &runtime-version "24.08"
+sdk: org.freedesktop.Sdk
+
+base: org.electronjs.Electron2.BaseApp
+base-version: *runtime-version
+
+command: startstreamingservicelauncher
+separate-locales: false
+
+finish-args:
+  - --socket=x11
+  - --socket=pulseaudio
+  - --share=ipc # required by x11
+  - --share=network
+  - --device=all # for gpu (video decoding) and controllers
+  - --talk-name=org.freedesktop.ScreenSaver # to allow chromium to inhibit screensaver
+  - --own-name=org.mpris.MediaPlayer2.chromium.* # to allow chromium to create an mpris instance (chromium creates a randomized name, impossible to change even from electron)
+  - --filesystem=/run/udev:ro # controllers sometimes aren't registered unless this is present
+  - --filesystem=~/Pictures:ro
+
+modules:
+  - name: StreamingServiceLauncher
+    buildsystem: simple
+    subdir: main
+    build-commands:
+      - cp -a ../linux*unpacked /app/bin/StreamingServiceLauncher
+      - install -Dm755 ../startstreamingservicelauncher /app/bin/startstreamingservicelauncher
+      - install -Dm644 flatpak/io.github.aarron_lee.StreamingServiceLauncher.metainfo.xml -t /app/share/metainfo/
+      - install -Dm644 flatpak/io.github.aarron_lee.StreamingServiceLauncher.desktop -t /app/share/applications/
+      - install -Dm644 flatpak/io.github.aarron_lee.StreamingServiceLauncher.png -t /app/share/icons/hicolor/256x256/apps
+
+    sources:
+      - type: archive
+        name: app_unpacked.zip
+        url: https://github.com/aarron-lee/StreamingServiceLauncher/releases/download/v0.1.8/app_unpacked.zip
+        sha256: dd4285b609ced6162aa0ec2029911979e22ebdfec7e7380823dec8ba6c27210a
+
+      - type: git
+        url: https://github.com/aarron-lee/StreamingServiceLauncher.git
+        commit: 546c7223563c854f9a8dc5acfc9702f1ff591f28
+        dest: main
+
+      - type: file
+        path: startstreamingservicelauncher

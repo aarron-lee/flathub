@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+export TMPDIR="$XDG_RUNTIME_DIR/app/${FLATPAK_ID:-io.github.aarron_lee.StreamingServiceLauncher}"
+
+echo "Passing the following arguments to Electron:" "${FLAGS[@]}"
+zypak-wrapper /app/bin/StreamingServiceLauncher/streaming-service-launcher "${FLAGS[@]}" "$@"
