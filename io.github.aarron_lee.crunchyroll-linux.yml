@@ -1,0 +1,46 @@
+app-id: io.github.aarron_lee.crunchyroll-linux
+
+runtime: org.freedesktop.Platform
+runtime-version: &runtime-version "24.08"
+sdk: org.freedesktop.Sdk
+
+base: org.electronjs.Electron2.BaseApp
+base-version: *runtime-version
+
+command: startcrunchyroll
+separate-locales: false
+
+finish-args:
+  - --socket=x11
+  - --socket=pulseaudio
+  - --share=ipc # required by x11
+  - --share=network
+  - --device=all # for gpu (video decoding) and controllers
+  - --talk-name=org.freedesktop.ScreenSaver # to allow chromium to inhibit screensaver
+  - --own-name=org.mpris.MediaPlayer2.chromium.* # to allow chromium to create an mpris instance (chromium creates a randomized name, impossible to change even from electron)
+  - --filesystem=/run/udev:ro # controllers sometimes aren't registered unless this is present
+
+modules:
+  - name: crunchyroll-linux
+    buildsystem: simple
+    subdir: main
+    build-commands:
+      - cp -a ../linux*unpacked /app/bin/crunchyroll-linux
+      - install -Dm755 ../startcrunchyroll /app/bin/startcrunchyroll
+      - install -Dm644 flatpak/io.github.aarron_lee.crunchyroll-linux.metainfo.xml -t /app/share/metainfo/
+      - install -Dm644 flatpak/io.github.aarron_lee.crunchyroll-linux.desktop -t /app/share/applications/
+      - install -Dm644 flatpak/io.github.aarron_lee.crunchyroll-linux.png -t /app/share/icons/hicolor/256x256/apps
+
+    sources:
+      - type: archive
+        name: crunchyroll_unpacked.zip
+        url: https://github.com/aarron-lee/crunchyroll-linux/releases/download/v1.0.9/crunchyroll_unpacked.zip
+        sha256: a4a1d79424385e79d027f0e9dd43ceee033a2bc4661d745a1f199cadbc2371dc
+
+      - type: git
+        url: https://github.com/aarron-lee/crunchyroll-linux.git
+        commit: 6989aa1e2c19cb299eff0f48c0fb161a5c981628
+        dest: main
+
+      - type: file
+        path: startcrunchyroll
