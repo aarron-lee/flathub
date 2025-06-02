@@ -1,0 +1,58 @@
+app-id: io.github.aarron_lee.ytmusic
+
+runtime: org.freedesktop.Platform
+runtime-version: &runtime-version "24.08"
+sdk: org.freedesktop.Sdk
+
+base: org.electronjs.Electron2.BaseApp
+base-version: *runtime-version
+
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node20
+
+build-options:
+  append-path: /usr/lib/sdk/node20/bin
+
+command: startytmusic
+separate-locales: false
+
+finish-args:
+  - --socket=x11
+  - --socket=pulseaudio
+  - --share=ipc # required by x11
+  - --share=network
+  - --device=all # for gpu (video decoding) and controllers
+  - --talk-name=org.freedesktop.ScreenSaver # to allow chromium to inhibit screensaver
+  - --own-name=org.mpris.MediaPlayer2.chromium.* # to allow chromium to create an mpris instance (chromium creates a randomized name, impossible to change even from electron)
+  - --filesystem=/run/udev:ro # controllers sometimes aren't registered unless this is present
+
+modules:
+  - name: ytmusic
+    buildsystem: simple
+    subdir: main
+    build-options:
+      env:
+        XDG_CACHE_HOME: /run/build/ytmusic/flatpak-node/cache
+        npm_config_cache: /run/build/ytmusic/flatpak-node/npm-cache
+        npm_config_offline: "true"
+    build-commands:
+      - npm install --offline
+      - ../flatpak-node/electron-builder-arch-args.sh
+      - npm run flatpak:build-unpacked -- $ELECTRON_BUILDER_ARCH_ARGS
+      - cp -a dist/linux*unpacked /app/bin/ytmusic
+
+      - install -Dm755 ../startytmusic /app/bin/startytmusic
+      - install -Dm644 flatpak/io.github.aarron_lee.ytmusic.metainfo.xml -t /app/share/metainfo/
+      - install -Dm644 flatpak/io.github.aarron_lee.ytmusic.desktop -t /app/share/applications/
+      - install -Dm644 flatpak/io.github.aarron_lee.ytmusic.png -t /app/share/icons/hicolor/256x256/apps
+
+    sources:
+      - generated-sources.json
+
+      - type: git
+        url: https://github.com/aarron-lee/ytmusic.git
+        commit: 9bce0eba579b8c929b407a633c77ac907b154608
+        dest: main
+
+      - type: file
+        path: startytmusic
