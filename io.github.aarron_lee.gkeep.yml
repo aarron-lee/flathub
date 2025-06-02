@@ -1,0 +1,58 @@
+app-id: io.github.aarron_lee.gkeep
+
+runtime: org.freedesktop.Platform
+runtime-version: &runtime-version "24.08"
+sdk: org.freedesktop.Sdk
+
+base: org.electronjs.Electron2.BaseApp
+base-version: *runtime-version
+
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node20
+
+build-options:
+  append-path: /usr/lib/sdk/node20/bin
+
+command: startgkeep
+separate-locales: false
+
+finish-args:
+  - --socket=x11
+  - --socket=pulseaudio
+  - --share=ipc # required by x11
+  - --share=network
+  - --device=all # for gpu (video decoding) and controllers
+  - --talk-name=org.freedesktop.ScreenSaver # to allow chromium to inhibit screensaver
+  - --own-name=org.mpris.MediaPlayer2.chromium.* # to allow chromium to create an mpris instance (chromium creates a randomized name, impossible to change even from electron)
+  - --filesystem=/run/udev:ro # controllers sometimes aren't registered unless this is present
+
+modules:
+  - name: gkeep
+    buildsystem: simple
+    subdir: main
+    build-options:
+      env:
+        XDG_CACHE_HOME: /run/build/gkeep/flatpak-node/cache
+        npm_config_cache: /run/build/gkeep/flatpak-node/npm-cache
+        npm_config_offline: "true"
+    build-commands:
+      - npm install --offline
+      - ../flatpak-node/electron-builder-arch-args.sh
+      - npm run flatpak:build-unpacked -- $ELECTRON_BUILDER_ARCH_ARGS
+      - cp -a dist/linux*unpacked /app/bin/gkeep
+
+      - install -Dm755 ../startgkeep /app/bin/startgkeep
+      - install -Dm644 flatpak/io.github.aarron_lee.gkeep.metainfo.xml -t /app/share/metainfo/
+      - install -Dm644 flatpak/io.github.aarron_lee.gkeep.desktop -t /app/share/applications/
+      - install -Dm644 flatpak/io.github.aarron_lee.gkeep.png -t /app/share/icons/hicolor/256x256/apps
+
+    sources:
+      - generated-sources.json
+
+      - type: git
+        url: https://github.com/aarron-lee/gkeep.git
+        commit: 041800753a0db36331f7dad2fd5a618b2c5de590
+        dest: main
+
+      - type: file
+        path: startgkeep
